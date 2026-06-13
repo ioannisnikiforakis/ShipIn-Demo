@@ -4,33 +4,17 @@ A short demo implementation of a python data collector tool.
 
 1. Introduction
 
-This simple python tool is developed with the purpose of collecting various data from a linux server and posting
-the collated report to a specified url (server-report API). To do so it utilises various linux commands executed 
-via the subprocess module, assembles them into a report structure (via dataclasses) and posts then via a simple 
-function using the standard requests module. 
+This simple python tool is developed with the purpose of collecting various data from a linux server and posting the collated report to a specified url (server-report API). To do so it utilises various linux commands executed via the subprocess module, assembles them into a report structure (via dataclasses) and posts then via a simple function using the standard requests module. 
 
-Usually such a tool would be invoked via a scheduler, so it could run periodically to perform its data collection
-duties and update the main collector Server (the host of the server-report API). For this purpose a simple installation
-script, that would setup a cron job, would be sufficient (instead of using supervisord i.e. more suitable for a persistent
-background monitor) but this was deemed outside the scope of this assignment.
+Usually such a tool would be invoked via a scheduler, so it could run periodically to perform its data collection duties and update the main collector Server (the host of the server-report API). For this purpose a simple installation script, that would setup a cron job, would be sufficient (instead of using supervisord i.e. more suitable for a persistent background monitor) but this was deemed outside the scope of this assignment.
 
 2. Application Components/Design
 
-The application simply consists of the collector.py module and a simple settings.py module that contains some configuration
-fields (hardcoded for now). A test_unit.py script includes the requested Unit Tests and a reports folder contains locally cached
-reports.
+The application simply consists of the collector.py module and a simple settings.py module that contains some configuration fields (hardcoded for now). A test_unit.py script includes the requested Unit Tests and a reports folder contains locally cached reports.
 
-When it runs the script references the settings.py module for the various commands it will use for data retrieval. One example would
-be: CMD_NETSTAT_PORTS = "netstat -tnl | grep tcp" To retrieve the listening tcp ports. Generally speaking we tried to use standard linux
-commands that we would use manually if we had access to that server to retrieve the information (also developing on a macbook precluded some
-alternatives like ss i.e. anyways). The assumption made here was that the company Servers would have similar setups/Configurations and that we
-could test all this conclusively before feature deployment on a sufficiently representative environment. However a simple 
-installation/Configuration script could be made to tailor the commands used to different deployments and ofcourse tha code could be made to more
-intelligently look for variances in command output (both outside the scope of this exercise).
+When it runs the script references the settings.py module for the various commands it will use for data retrieval. One example would be: CMD_NETSTAT_PORTS = "netstat -tnl | grep tcp" To retrieve the listening tcp ports. Generally speaking we tried to use standard linux commands that we would use manually if we had access to that server to retrieve the information (also developing on a macbook precluded some alternatives like ss i.e. anyways). The assumption made here was that the company Servers would have similar setups/Configurations and that we could test all this conclusively before feature deployment on a sufficiently representative environment. However a simple installation/Configuration script could be made to tailor the commands used to different deployments and ofcourse tha code could be made to more intelligently look for variances in command output (both outside the scope of this exercise).
 
-Finally for collating and structuring the report we chose a standard dataclass approach that has a natural translation to a dictionary, that has
-a natural translation to the JSON body we wanted to transmit. Ofcourse, in a proper implemenation the specific format of the report would be specified
-in the API specs, but concerning the constraints of this assignment we believe we supplied a readable and reasonably tidy output that way.
+Finally for collating and structuring the report we chose a standard dataclass approach that has a natural translation to a dictionary, that has a natural translation to the JSON body we wanted to transmit. Ofcourse, in a proper implemenation the specific format of the report would be specified in the API specs, but concerning the constraints of this assignment we believe we supplied a readable and reasonably tidy output that way.
 
 
 3. Execution instructions
@@ -38,8 +22,7 @@ Please start by checking out the public repository, in which this readme is incl
 
 After that you can cd to the git/ShipIn-Demo folder.
 
-To run the application simply invoke "python3 collector.py" from the command line. You should see several lines from the included logger 
-indicating success (or failure and error statuses)
+To run the application simply invoke "python3 collector.py" from the command line. You should see several lines from the included logger indicating success (or failure and error statuses)
 
 Here is a sample output from a tool invocation:
 
@@ -52,8 +35,7 @@ macbook-pro:ShipIn-Demo ioannisnikiforakis$ python3 collector.py
 
 4. Unit Tests
 
-To run the simple suite of supplied unit tests please type "python3 test_unit.py"
-The result of an invocation should look like this:
+To run the simple suite of supplied unit tests please type "python3 test_unit.py" The result of an invocation should look like this:
 
 macbook-pro:ShipIn-Demo ioannisnikiforakis$ python3 test_unit.py 
 [SHIPIN_REPORTER] 2026-06-13 17:24:51,129 [INFO] Running Risk Score Calculator Tests
