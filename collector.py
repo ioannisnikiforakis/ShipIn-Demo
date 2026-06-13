@@ -4,9 +4,6 @@ it will collect a predetermined set of system data, calculate a Risk Score and s
 a report to a server.
 """
 
-# This file contains all the hardcoded for now values including API url, Server IP
-# and the various command strings
-
 import os
 import json
 import re
@@ -155,6 +152,46 @@ def get_info(command, sudo=False):
         logger.logException(err)
     return ret_str.strip()
 
+def parse_ssh_rlogin(command):
+    ssh_rlogin_value = "prohibit-password"
+    ssh_rlogin_str = get_info(command)
+    if len(ssh_rlogin_str) > 0:
+        lines = ssh_rlogin_str.split(settings.NEWLINE)
+        for l in lines:
+            m = VALID_SSHPERM.match(l)
+            if m:
+                if l[0] != "#":
+                    ssh_rlogin_value = f"{m.group(1)}"
+    return ssh_rlogin_value
+
+def parse_ssh_passauth(command):
+    ssh_passauth_value = "yes"
+    ssh_passauth_str = get_info(command)
+    if len(ssh_passauth_str) > 0:
+        lines = ssh_passauth_str.split(settings.NEWLINE)
+        for l in lines:
+            m = VALID_SSHPASS.match(l)
+            if m:
+                if l[0] != "#":
+                    ssh_passauth_value = f"{m.group(1)}"
+    return ssh_passauth_value
+
+def calculate_risk(report):
+    risk_score = 0
+    if report.security_checks.ssh_root_login.lower() == "yes":
+        risk_score+=25
+    if report.security_checks.ssh_password_authentication.lower() == "yes":
+        risk_score+=25
+    if len(report.security_checks.uid0_users) > 1:
+        risk_score+=25
+    for fs in report.storage_info.filesystems:
+        if fs.over_threshold is True:
+            risk_score+=15
+            break
+    if len(report.service_checks.failed_services) > 0:
+        risk_score+=10
+    return risk_score
+
 def collect():
     """
     The main collector function. Will populate the info dataclasses
@@ -189,27 +226,11 @@ def collect():
 
     # Assume prohibit-password default if we cannot parse a line?
     # We also assume no per user settings!
-    ssh_rlogin_value = "prohibit-password"
-    ssh_rlogin_str = get_info(settings.CMD_SSHD_CFG)
-    if len(ssh_rlogin_str) > 0:
-        lines = ssh_rlogin_str.split(settings.NEWLINE)
-        for l in lines:
-            m = VALID_SSHPERM.match(l)
-            if m:
-                if l[0] != "#":
-                    ssh_rlogin_value = f"{m.group(1)}"
+    ssh_rlogin_value = parse_ssh_rlogin(settings.CMD_SSHD_CFG)
 
     # Assume yes default if we cannot parse a line?
     # We also assume no per user settings!
-    ssh_passauth_value = "yes"
-    ssh_passauth_str = get_info(settings.CMD_SSHD_PASS)
-    if len(ssh_passauth_str) > 0:
-        lines = ssh_passauth_str.split(settings.NEWLINE)
-        for l in lines:
-            m = VALID_SSHPASS.match(l)
-            if m:
-                if l[0] != "#":
-                    ssh_passauth_value = f"{m.group(1)}"
+    ssh_passauth_value = parse_ssh_passauth(settings.CMD_SSHD_PASS)
 
     sec_checks = SecurityChecks(uidz_users,ssh_rlogin_value,ssh_passauth_value)
     # print(json.dumps(asdict(sec_checks)))
@@ -314,21 +335,9 @@ def collect():
 
     # Calculate Risk Score
     risk_score = 0
-    if ssh_rlogin_value.lower() == "yes":
-        risk_score+=25
-    if ssh_passauth_value.lower() == "yes":
-        risk_score+=25
-    if len(uidz_users) > 1:
-        risk_score+=25
-    for fs in fs_list:
-        if fs.over_threshold is True:
-            risk_score+=15
-            break
-    if len(failed_list) > 0:
-        risk_score+=10
-
     report = ServerReport(risk_score,system_info,sec_checks,
         storage_info,service_info,net_info)
+    report.risk_score = calculate_risk(report)
     report_dict = asdict(report)
     cache_report(json.dumps(report_dict, indent=4))
     logger.info("System Data collection Complete. Transmitting...")
